@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>三星庫存檢查</title>
   <style>
     body{font-family:system-ui,Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f4f6f9;color:#222}
@@ -21,55 +21,54 @@
 
 <script>
 /* ---------- CONFIG ---------- */
-const API_URL       = 'https://shop.samsung.com/tokocommercewebservices/v2/hk/addToCart/multi?redirect=CART&products%5B0%5D.productCode=SM-F9660DBGTGY&&products%5B0%5D.qty=1&newCart=false&voucherCode=test';   // ← 你的 API
-const FALLBACK_URL  = 'https://www.samsung.com/hk/smartphones/galaxy-z/?qrcode=nostock';
-const TIMEOUT_MS    = 8000;                                   // 8 秒逾時
+const API_URL = 'https://your-api.com/check'; // ← CHANGE THIS TO YOUR REAL API
+const FALLBACK_URL = 'https://www.samsung.com/hk/smartphones/galaxy-z/?qrcode=nostock';
+const TIMEOUT_MS = 8000;
 /* ---------------------------- */
 
-const msg = document.querySelector('.msg');
+// Wait for DOM to load, THEN grab elements
+document.addEventListener('DOMContentLoaded', function() {
+  const msg = document.querySelector('.msg'); // ← Now safe: DOM is ready
 
-async function check() {
-  const ctrl = new AbortController();
-  const tid  = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  async function check() {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
 
-  try {
-    const resp = await fetch(API_URL, {
-      method: 'GET',
-      redirect: 'manual',          // 重要：阻止自動跟隨 302
-      signal: ctrl.signal
-    });
-    clearTimeout(tid);
+    try {
+      const resp = await fetch(API_URL, {
+        method: 'GET',
+        redirect: 'manual',
+        signal: ctrl.signal
+      });
+      clearTimeout(tid);
 
-    // -------------------------------------------------
-    // 1. 不是 302 → 直接跳到「無貨」頁面
-    // -------------------------------------------------
-    if (resp.status !== 302) {
-      const target = new URL(FALLBACK_URL);
-      new URLSearchParams(location.search).forEach((v,k) => target.searchParams.set(k,v));
-      location.href = target;
-      return;
+      if (resp.status !== 302) {
+        // No stock: Go to fallback, preserve any ?params from original URL
+        const url = new URL(FALLBACK_URL);
+        new URLSearchParams(location.search).forEach((v, k) => url.searchParams.set(k, v));
+        location.href = url;
+        return;
+      }
+
+      // Has stock: Follow the 302 Location header
+      const location = resp.headers.get('Location');
+      if (!location) throw new Error('Missing Location header');
+
+      const final = new URL(location, API_URL); // Resolve relative URLs
+      // Preserve original query params
+      new URLSearchParams(location.search).forEach((v, k) => final.searchParams.set(k, v));
+
+      setTimeout(() => location.href = final, 400); // Brief delay for UX
+    } catch (e) {
+      clearTimeout(tid);
+      msg.classList.add('error');
+      msg.textContent = e.name === 'AbortError' ? '請求逾時，請稍後再試' : `錯誤：${e.message}`;
+      console.error('API Check Error:', e); // For debugging
     }
-
-    // -------------------------------------------------
-    // 2. 正是 302 → 讀取 Location 標頭並跟隨
-    // -------------------------------------------------
-    const location = resp.headers.get('Location');
-    if (!location) throw new Error('302 沒有 Location 標頭');
-
-    const final = new URL(location, API_URL);   // 相對路徑自動補全
-    new URLSearchParams(location.search).forEach((v,k) => final.searchParams.set(k,v));
-    new URLSearchParams(location.search).forEach((v,k) => final.searchParams.set(k,v));
-
-    setTimeout(() => location.href = final, 400);   // 小延遲讓使用者看到 spinner
-  } catch (e) {
-    clearTimeout(tid);
-    msg.classList.add('error');
-    msg.textContent = e.name === 'AbortError'
-      ? '請求逾時，請稍後再試'
-      : `錯誤：${e.message}`;
   }
-}
-addEventListener('DOMContentLoaded', check);
+
+  check(); // Start the check now that everything is initialized
+});
 </script>
 </body>
 </html>
