@@ -1,59 +1,88 @@
-<script>
-  function getQueryParams() {
-    const params = new URLSearchParams(window.location.search);
-    return {
-      productCode: params.get('productCode'),
-      voucherCode: params.get('voucherCode'),
-      oosLink: params.get('oosLink'),
-      debug: params.get('debug') === 'true'
-    };
-  }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Samsung Cart Checker</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 2rem;
+    }
+    #message {
+      font-size: 1.2rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <p id="message">Initializing stock check...</p>
 
-  async function checkStock() {
-    const { productCode, voucherCode, oosLink, debug } = getQueryParams();
-
-    if (!productCode || !voucherCode || !oosLink) {
-      document.getElementById('message').textContent =
-        'Missing required parameters in URL.';
-      return;
+  <script>
+    function getQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        productCode: params.get('productCode'),
+        voucherCode: params.get('voucherCode'),
+        oosLink: params.get('oosLink'),
+        debug: params.get('debug') === 'true'
+      };
     }
 
-    const stockUrl = `https://shop.samsung.com/tokocommercewebservices/v2/hk/products/${encodeURIComponent(productCode)}/`;
+    async function checkStock() {
+      const { productCode, voucherCode, oosLink, debug } = getQueryParams();
 
-    try {
-      const response = await fetch(stockUrl);
-      const responseText = await response.text();
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = 'Checking stock availability...';
 
-      console.log("Raw XML response:", responseText);
-
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(responseText, "application/xml");
-
-      const stockStatus = xmlDoc.querySelector("stockLevelStatus")?.textContent?.trim();
-
-      console.log("Extracted stockLevelStatus:", stockStatus);
-
-      if (!stockStatus) {
-        document.getElementById('message').textContent =
-          'Could not read stock status from response.';
+      if (!productCode || !voucherCode || !oosLink) {
+        messageEl.textContent = 'Missing required parameters in URL.';
         return;
       }
 
-      document.getElementById('message').textContent = `Stock status: ${stockStatus}`;
+      const stockUrl = `https://shop.samsung.com/tokocommercewebservices/v2/hk/products/${encodeURIComponent(productCode)}/`;
 
-      if (debug) {
-        console.log("Debug mode active — no redirect.");
-        return;
-      }
+      try {
+        const response = await fetch(stockUrl);
+        const responseText = await response.text();
 
-      if (stockStatus === 'inStock') {
-        const cartUrl = `https://shop.samsung.com/tokocommercewebservices/v2/hk/addToCart/multi?redirect=CART&products%5B0%5D.productCode=${encodeURIComponent(productCode)}&&products%5B0%5D.qty=1&newCart=false&voucherCode=${encodeURIComponent(voucherCode)}`;
-        window.location.href = cartUrl;
-      } else {
-        setTimeout(() => {
-          window.location.href = oosLink;
-        }, 6000);
+        console.log("Raw XML response:", responseText);
+
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(responseText, "application/xml");
+
+        const stockStatus = xmlDoc.querySelector("stockLevelStatus")?.textContent?.trim();
+
+        console.log("Extracted stockLevelStatus:", stockStatus);
+
+        if (!stockStatus) {
+          messageEl.textContent = 'Could not read stock status from response.';
+          return;
+        }
+
+        messageEl.textContent = `Stock status: ${stockStatus}`;
+
+        if (debug) {
+          console.log("Debug mode active — no redirect.");
+          return;
+        }
+
+        if (stockStatus === 'inStock') {
+          const cartUrl = `https://shop.samsung.com/tokocommercewebservices/v2/hk/addToCart/multi?redirect=CART&products%5B0%5D.productCode=${encodeURIComponent(productCode)}&&products%5B0%5D.qty=1&newCart=false&voucherCode=${encodeURIComponent(voucherCode)}`;
+          window.location.href = cartUrl;
+        } else {
+          setTimeout(() => {
+            window.location.href = oosLink;
+          }, 6000);
+        }
+      } catch (error) {
+        messageEl.textContent = 'Error checking stock. See console for details.';
+        console.error("Fetch or parse error:", error);
       }
-    } catch (error) {
-      document.getElementById('message').textContent =
-        'Error
+    }
+
+    checkStock();
+  </script>
+</body>
+</html>
