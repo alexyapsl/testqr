@@ -21,12 +21,13 @@
       return {
         productCode: params.get('productCode'),
         voucherCode: params.get('voucherCode'),
-        oosLink: params.get('oosLink')
+        oosLink: params.get('oosLink'),
+        debug: params.get('debug') === 'true'
       };
     }
 
     async function checkStock() {
-      const { productCode, voucherCode, oosLink } = getQueryParams();
+      const { productCode, voucherCode, oosLink, debug } = getQueryParams();
 
       if (!productCode || !voucherCode || !oosLink) {
         document.getElementById('message').textContent =
@@ -38,36 +39,20 @@
 
       try {
         const responseText = await fetch(stockUrl).then(res => res.text());
-
-        // Log raw XML response
         console.log("Raw XML response:", responseText);
 
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(responseText, "application/xml");
 
         const stockStatus = xmlDoc.querySelector("stockLevelStatus")?.textContent?.trim();
-
-        // Log extracted stock status
         console.log("Extracted stockLevelStatus:", stockStatus);
 
         document.getElementById('message').textContent = `Stock status: ${stockStatus}`;
 
-        if (stockStatus === 'inStock') {
-          const cartUrl = `https://shop.samsung.com/tokocommercewebservices/v2/hk/addToCart/multi?redirect=CART&products%5B0%5D.productCode=${encodeURIComponent(productCode)}&&products%5B0%5D.qty=1&newCart=false&voucherCode=${encodeURIComponent(voucherCode)}`;
-          window.location.href = cartUrl;
-        } else {
-          setTimeout(() => {
-            window.location.href = oosLink;
-          }, 6000);
+        if (debug) {
+          console.log("Debug mode active — no redirect.");
+          return;
         }
-      } catch (error) {
-        document.getElementById('message').textContent =
-          'Error checking stock. Please try again later.';
-        console.error("Fetch or parse error:", error);
-      }
-    }
 
-    checkStock();
-  </script>
-</body>
-</html>
+        if (stockStatus === 'inStock') {
+          const cartUrl = `https://shop.samsung.com/tokocommercewebservices
