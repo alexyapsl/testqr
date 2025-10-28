@@ -40,9 +40,9 @@
         const response = await fetch(stockUrl);
         const data = await response.json();
 
-        const stockStatus = data?.stock?.stockLevelStatus || 'unknown';
+        const stockStatus = data?.stock?.stockLevelStatus?.trim().toLowerCase();
 
-        if (stockStatus === 'inStock') {
+        if (stockStatus === 'instock') {
           const cartUrl = `https://shop.samsung.com/tokocommercewebservices/v2/hk/addToCart/multi?redirect=CART&products%5B0%5D.productCode=${encodeURIComponent(productCode)}&&products%5B0%5D.qty=1&newCart=false&voucherCode=${encodeURIComponent(voucherCode)}`;
           window.location.href = cartUrl;
         } else {
