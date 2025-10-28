@@ -16,21 +16,38 @@
   <p id="message">Checking stock availability...</p>
 
   <script>
+    function getQueryParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        productCode: params.get('productCode'),
+        voucherCode: params.get('voucherCode'),
+        oosLink: params.get('oosLink')
+      };
+    }
+
     async function checkStock() {
+      const { productCode, voucherCode, oosLink } = getQueryParams();
+
+      if (!productCode || !voucherCode || !oosLink) {
+        document.getElementById('message').textContent =
+          'Missing required parameters in URL.';
+        return;
+      }
+
+      const checkUrl = `https://shop.samsung.com/hk/ng/p4v1/addToCart?products[0].productCode=${encodeURIComponent(productCode)}&&products[0].quantity=0`;
+
       try {
-        const response = await fetch(
-          'https://shop.samsung.com/hk/ng/p4v1/addToCart?products[0].productCode=SM-S9380ZDWTGY&&products[0].quantity=0'
-        );
+        const response = await fetch(checkUrl);
         const data = await response.json();
 
         if (data.resultMessage === 'SUCCESS') {
-          window.location.href =
-            'https://shop.samsung.com/tokocommercewebservices/v2/hk/addToCart/multi?redirect=CART&products%5B0%5D.productCode=SM-S9380ZDWTGY&&products%5B0%5D.qty=1&newCart=false&voucherCode=EV0-7YHR-DTTA-G7WH';
+          const cartUrl = `https://shop.samsung.com/tokocommercewebservices/v2/hk/addToCart/multi?redirect=CART&products%5B0%5D.productCode=${encodeURIComponent(productCode)}&&products%5B0%5D.qty=1&newCart=false&voucherCode=${encodeURIComponent(voucherCode)}`;
+          window.location.href = cartUrl;
         } else {
           document.getElementById('message').textContent =
             'Out of Stock, please choose another product.';
           setTimeout(() => {
-            window.location.href = 'https://www.samsung.com/hk/smartphones/galaxy-s25-ultra/buy/';
+            window.location.href = oosLink;
           }, 6000);
         }
       } catch (error) {
