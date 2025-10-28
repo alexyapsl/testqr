@@ -40,7 +40,8 @@
         return;
       }
 
-      const stockUrl = `https://shop.samsung.com/tokocommercewebservices/v2/hk/products/${encodeURIComponent(productCode)}/`;
+      // ✅ Correct endpoint with trailing /** for full XML
+      const stockUrl = `https://shop.samsung.com/tokocommercewebservices/v2/hk/products/${encodeURIComponent(productCode)}/**`;
 
       try {
         const response = await fetch(stockUrl, {
@@ -56,7 +57,7 @@
         const xmlDoc = parser.parseFromString(responseText, "application/xml");
 
         // ✅ Correct nested selector
-        const stockStatus = xmlDoc.querySelector("stock stockLevelStatus")?.textContent?.trim();
+        const stockStatus = xmlDoc.querySelector("stock > stockLevelStatus")?.textContent?.trim();
 
         console.log("Extracted stockLevelStatus:", stockStatus);
 
