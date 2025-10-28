@@ -37,12 +37,12 @@
       const stockUrl = `https://shop.samsung.com/tokocommercewebservices/v2/hk/products/${encodeURIComponent(productCode)}/`;
 
       try {
-        const response = await fetch(stockUrl);
-        const data = await response.json();
+        const responseText = await fetch(stockUrl).then(res => res.text());
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(responseText, "application/xml");
 
-        const stockStatus = data && data.stock && data.stock.stockLevelStatus;
+        const stockStatus = xmlDoc.querySelector("stockLevelStatus")?.textContent?.trim();
 
-        // Debug output
         document.getElementById('message').textContent = `Stock status: ${stockStatus}`;
 
         if (stockStatus === 'inStock') {
