@@ -13,11 +13,17 @@
     #message {
       font-size: 1.2rem;
       color: #333;
+      margin-bottom: 1rem;
+    }
+    #countdown {
+      font-size: 1.5rem;
+      color: #c00;
     }
   </style>
 </head>
 <body>
   <p id="message">Initializing stock check...</p>
+  <p id="countdown"></p>
 
   <script>
     function getQueryParams() {
@@ -33,6 +39,7 @@
     async function checkStock() {
       const { productCode, voucherCode, oosLink, debug } = getQueryParams();
       const messageEl = document.getElementById('message');
+      const countdownEl = document.getElementById('countdown');
       messageEl.textContent = 'Checking stock availability...';
 
       if (!productCode || !voucherCode || !oosLink) {
@@ -40,7 +47,6 @@
         return;
       }
 
-      // ✅ Correct endpoint with trailing /** for full XML
       const stockUrl = `https://shop.samsung.com/tokocommercewebservices/v2/hk/products/${encodeURIComponent(productCode)}/**`;
 
       try {
@@ -56,7 +62,6 @@
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(responseText, "application/xml");
 
-        // ✅ Correct nested selector
         const stockStatus = xmlDoc.querySelector("stock > stockLevelStatus")?.textContent?.trim();
 
         console.log("Extracted stockLevelStatus:", stockStatus);
@@ -66,9 +71,8 @@
           return;
         }
 
-        messageEl.textContent = `Stock status: ${stockStatus}`;
-
         if (debug) {
+          messageEl.textContent = `Stock status: ${stockStatus}`;
           console.log("Debug mode active — no redirect.");
           return;
         }
@@ -77,9 +81,18 @@
           const cartUrl = `https://shop.samsung.com/tokocommercewebservices/v2/hk/addToCart/multi?redirect=CART&products%5B0%5D.productCode=${encodeURIComponent(productCode)}&&products%5B0%5D.qty=1&newCart=false&voucherCode=${encodeURIComponent(voucherCode)}`;
           window.location.href = cartUrl;
         } else {
-          setTimeout(() => {
-            window.location.href = oosLink;
-          }, 6000);
+          let seconds = 6;
+          messageEl.textContent = '該產品庫存不足，請選擇其他型號。';
+          countdownEl.textContent = `Redirecting in ${seconds} seconds...`;
+
+          const timer = setInterval(() => {
+            seconds--;
+            countdownEl.textContent = `Redirecting in ${seconds} seconds...`;
+            if (seconds <= 0) {
+              clearInterval(timer);
+              window.location.href = oosLink;
+            }
+          }, 1000);
         }
       } catch (error) {
         messageEl.textContent = 'Error checking stock. See console for details.';
