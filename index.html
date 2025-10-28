@@ -55,7 +55,8 @@
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(responseText, "application/xml");
 
-        const stockStatus = xmlDoc.querySelector("stockLevelStatus")?.textContent?.trim();
+        // ✅ Correct nested selector
+        const stockStatus = xmlDoc.querySelector("stock stockLevelStatus")?.textContent?.trim();
 
         console.log("Extracted stockLevelStatus:", stockStatus);
 
