@@ -38,10 +38,17 @@
 
       try {
         const responseText = await fetch(stockUrl).then(res => res.text());
+
+        // Log raw XML response
+        console.log("Raw XML response:", responseText);
+
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(responseText, "application/xml");
 
         const stockStatus = xmlDoc.querySelector("stockLevelStatus")?.textContent?.trim();
+
+        // Log extracted stock status
+        console.log("Extracted stockLevelStatus:", stockStatus);
 
         document.getElementById('message').textContent = `Stock status: ${stockStatus}`;
 
@@ -56,7 +63,7 @@
       } catch (error) {
         document.getElementById('message').textContent =
           'Error checking stock. Please try again later.';
-        console.error(error);
+        console.error("Fetch or parse error:", error);
       }
     }
 
