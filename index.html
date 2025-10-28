@@ -40,7 +40,7 @@
         const response = await fetch(stockUrl);
         const data = await response.json();
 
-        const stockStatus = data?.stock?.stockLevelStatus;
+        const stockStatus = data && data.stock && data.stock.stockLevelStatus;
 
         // Debug output
         document.getElementById('message').textContent = `Stock status: ${stockStatus}`;
